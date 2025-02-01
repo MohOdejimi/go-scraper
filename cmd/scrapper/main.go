@@ -12,8 +12,9 @@ import (
 
 func main() {
 	urlFlag := flag.String("url", "", "The URL to scrape content from")
-	outputFlag := flag.String("output", "output.txt", "The file to write the scraped content to")
-	portFlag := flag.String("port", "8080", "The port to serve the file for download")
+	outputFlag := flag.String("output", "output", "The filename (without extension) to save the content")
+	formatFlag := flag.String("format", "txt", "The format to save the content")
+	portFlag := flag.String("port", "", "The port to serve the file for download")
 
 	flag.Parse()
 
@@ -22,24 +23,30 @@ func main() {
 		flag.Usage()
 		os.Exit(1)
 	}
+
+	if *portFlag == "" {
+		log.Fatal("Error: Please provide a port using the -port flag")
+		flag.Usage()
+		os.Exit(1)
+	}
  
-	urlContent, err := scrapper.Fetch(*urlFlag)
+	doc, err := scrapper.Fetch(*urlFlag)
 	if err != nil {
 		log.Fatalf("Error fetching URL: %s", err)
 	}
 
-	 
-	err = os.WriteFile(*outputFlag, []byte(urlContent), 0644)
+ 
+	parsedData, err := scrapper.ParseHTML(doc)
 	if err != nil {
-		log.Fatalf("Error writing to file: %s", err)
+		log.Fatalf("Error parsing HTML: %s", err)
 	}
-
-	fmt.Printf("Content successfully scraped from %s and saved to %s\n", *urlFlag, *outputFlag)
-
-	 
+ 
+	filePath := scrapper.DetermineFileFormat(*formatFlag, *outputFlag, parsedData)
+	fmt.Printf("Scraped data saved to: %s\n", filePath)
+ 
 	go func() {
 		http.Handle("/", http.FileServer(http.Dir(".")))
-		fmt.Printf("Download your file at: http://localhost:%s/%s\n", *portFlag, *outputFlag)
+		fmt.Printf("Download your file at: http://localhost:%s/%s\n", *portFlag, filePath)
 		log.Fatal(http.ListenAndServe(":"+*portFlag, nil))
 	}()
 

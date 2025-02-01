@@ -2,22 +2,28 @@ package scrapper
 
 import (
 	"net/http" 
-	"io"
+	"fmt"
+
+	"github.com/PuerkitoBio/goquery"
 )
 
-func Fetch(url string) (string, error) {
+func Fetch(url string) (*goquery.Document, error) {
 	resp, err := http.Get(url)
 
     if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("non-200 response code: %d", resp.StatusCode)
+	}
 
-	body, err := io.ReadAll(resp.Body)
+    doc, err := goquery.NewDocumentFromReader(resp.Body)
 
 	if err != nil {
-		return "", err
+		return nil, fmt.Errorf("failed to parse the HTML document: %w", err)
 	}
-	return string(body), nil
+
+	return doc, nil
 }
