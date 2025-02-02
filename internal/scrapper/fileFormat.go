@@ -25,7 +25,7 @@ func DetermineFileFormat(formatFlag, outputFlag string, parsedData []string) str
 
 	case "json":
 		filename = outputFlag + ".json"
-		jsonData, err := json.MarshalIndent(map[string][]string{"content": parsedData}, "", "  ")
+		jsonData, err := json.MarshalIndent(map[string]interface{}{"content": parsedData}, "", "  ")
 		if err != nil {
 			log.Fatalf("Error marshaling JSON: %s", err)
 		}
